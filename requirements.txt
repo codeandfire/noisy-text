@@ -1,0 +1,11 @@
+scikit-learn
+torch==1.9.1
+fasttext
+transformers==4.10.1
+
+# for text preprocessing
+emoji
+nltk
+
+# for progress bars
+tqdm
