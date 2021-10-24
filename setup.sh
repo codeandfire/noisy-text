@@ -247,7 +247,7 @@ EOF
 		"$data_root/$semeval20_dirname/test.txt"
 	mv 'Semeval_2020_task9_data/Hinglish/Hinglish_test_labels.txt' \
 		"$data_root/$semeval20_dirname/test-labels.txt"
-	mv 'Semeval_2020_task9_data/Hinglish/README.txt' "$data_root/$semeval20_dirname/"
+	mv 'Semeval_2020_task9_data/README.txt' "$data_root/$semeval20_dirname/"
 	rm -r 'Semeval_2020_task9_data/'
 
 	rm 'Semeval_2020_task9_data.zip'
