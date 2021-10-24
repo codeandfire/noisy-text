@@ -273,6 +273,9 @@ EOF
 	wget 'http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz'
 	tar -xvzf '1-billion-word-language-modeling-benchmark-r13output.tar.gz'
 
+	# this corpus comes in 'training' and 'heldout' splits.
+	# in our case, there is no need for such a split, so we combine both
+	# of them.
 	cat 1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled/* \
 		1-billion-word-language-modeling-benchmark-r13output/heldout-monolingual.tokenized.shuffled/* > "$data_root/$statmt_dirname/corpus.txt"
 	rm -r '1-billion-word-language-modeling-benchmark-r13output/'
@@ -303,6 +306,11 @@ EOF
 	rm 'hi.tar.xz'
 	rmdir 'data/hi/'
 	rmdir 'data/'
+
+	# this corpus is twice the size of the English corpus.
+	# we retain only the first half in order to make it comparable in size.
+	head -n '31528955' "$data_root/$indiccorp_hi_dirname/corpus.txt" > 'temp.txt'
+	mv 'temp.txt' "$data_root/$indiccorp_hi_dirname/corpus.txt"
 
 	modify_setting 'HI_CORPUS_ROOT' "'$PWD/$data_root/$indiccorp_hi_dirname/'"
 }
