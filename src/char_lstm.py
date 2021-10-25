@@ -106,11 +106,19 @@ class CharDataset(Dataset):
 class CharLSTM(nn.Module):
     """Model definition."""
 
-    def __init__(self, charset_size, hidden_size, bidirectional=False):
+    def __init__(
+        self,
+        charset_size,
+        hidden_size,
+        bidirectional=False,
+        num_layers=1,
+        dropout=0
+    ):
         """Initialize the model.
 
         Pass the size of character set (charset), the hidden size of the LSTM,
-        and whether the LSTM should be bidirectional or not.
+        whether the LSTM should be bidirectional or not, the number of hidden
+        layers in the LSTM, and the dropout to be used by the LSTM.
         """
 
         super().__init__()
@@ -127,8 +135,9 @@ class CharLSTM(nn.Module):
         self.lstm = nn.LSTM(
             input_size=charset_size,
             hidden_size=hidden_size,
-            num_layers=1,
+            num_layers=num_layers,
             batch_first=True,
+            dropout=dropout,
             bidirectional=bidirectional
         )
 
@@ -246,6 +255,14 @@ if __name__ == '__main__':
         '--bidirectional', action='store_true', default=False,
         help='use a bidirectional LSTM'
     )
+    parser.add_argument(
+        '--num-layers', type=int, default=1,
+        help='number of hidden layers in LSTM'
+    )
+    parser.add_argument(
+        '--dropout', type=float, default=0.5,
+        help='dropout to be used for deep LSTM'
+    )
     parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
     parser.add_argument(
         '--batch-size', type=int, default=256, help='batch size'
@@ -266,7 +283,7 @@ if __name__ == '__main__':
     if args.mode == MODE_DEBUG:
         num_lines = 20
     elif args.mode == MODE_DEV:
-        num_lines = 20000
+        num_lines = 10000
 
 
     if args.lang == utils.LANG_ENG:
@@ -397,7 +414,9 @@ if __name__ == '__main__':
     model = CharLSTM(
         charset_size=len(charset)+1,
         hidden_size=args.hidden_size,
-        bidirectional=args.bidirectional
+        bidirectional=args.bidirectional,
+        num_layers=args.num_layers,
+        dropout=args.dropout
     )
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
