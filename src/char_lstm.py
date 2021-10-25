@@ -213,10 +213,9 @@ def char_perplexity(pred, output_seqs, seq_lengths):
 
 
 def filter_tweet(text):
-    text = text.replace(utils.USER_SYMBOL, '')
-    text = text.replace(utils.HTTPURL_SYMBOL, '')
-    text = text.replace(utils.EMOJI_SYMBOL, '')
-    text = text.replace('#', '')
+    """Filter out / modify certain special tokens in a tweet."""
+
+
     return text
 
 
@@ -288,10 +287,16 @@ if __name__ == '__main__':
         if args.mode == MODE_DEBUG:
             perp_dataset = EN_SANITY_CHECKS
         else:
+
+            # load the English and Hindi-English tweet datasets
             perp_dataset = utils.load_en_tweets_dataset(split='train')
             perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='dev')
             perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='test')
+            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='train')
+            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='dev')
+            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
 
+            # extract the tweet IDs and the text of the tweets
             perp_ids = [row['tweet_id'] for row in perp_dataset]
             perp_dataset = [row['text'] for row in perp_dataset]
 
@@ -325,6 +330,7 @@ if __name__ == '__main__':
 
     if args.mode != MODE_DEBUG:
 
+        # preprocess the tweets
         perp_dataset = utils.preprocess_tweets(
             perp_dataset,
             tokenize=False,
@@ -333,8 +339,19 @@ if __name__ == '__main__':
             mask_hashtag=False,
             mask_emoji=True
         )
-        perp_dataset = [filter_tweet(text) for text in perp_dataset]
 
+        # remove tokens representing user mentions, URLs and emojis
+        # also remove the leading # of hashtags.
+        for i in range(len(perp_dataset)):
+            for symbol in [
+                utils.USER_SYMBOL,
+                utils.HTTPURL_SYMBOL,
+                utils.EMOJI_SYMBOL,
+                '#'
+            ]:
+                perp_dataset[i] = perp_dataset[i].replace(symbol, '')
+
+        # for Hindi, additionally back-transliterate
         if args.lang == utils.LANG_HIN:
             perp_dataset = [
                 utils.back_transliterate(text) for text in perp_dataset
