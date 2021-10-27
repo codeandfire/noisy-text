@@ -110,15 +110,12 @@ class CharLSTM(nn.Module):
         self,
         charset_size,
         hidden_size,
-        bidirectional=False,
-        num_layers=1,
-        dropout=0
+        bidirectional=False
     ):
         """Initialize the model.
 
         Pass the size of character set (charset), the hidden size of the LSTM,
-        whether the LSTM should be bidirectional or not, the number of hidden
-        layers in the LSTM, and the dropout to be used by the LSTM.
+        and whether the LSTM should be bidirectional or not.
         """
 
         super().__init__()
@@ -135,9 +132,7 @@ class CharLSTM(nn.Module):
         self.lstm = nn.LSTM(
             input_size=charset_size,
             hidden_size=hidden_size,
-            num_layers=num_layers,
             batch_first=True,
-            dropout=dropout,
             bidirectional=bidirectional
         )
 
@@ -220,14 +215,6 @@ def char_perplexity(pred, output_seqs, seq_lengths):
     return perps
 
 
-
-def filter_tweet(text):
-    """Filter out / modify certain special tokens in a tweet."""
-
-
-    return text
-
-
 if __name__ == '__main__':
 
 
@@ -254,14 +241,6 @@ if __name__ == '__main__':
     parser.add_argument(
         '--bidirectional', action='store_true', default=False,
         help='use a bidirectional LSTM'
-    )
-    parser.add_argument(
-        '--num-layers', type=int, default=1,
-        help='number of hidden layers in LSTM'
-    )
-    parser.add_argument(
-        '--dropout', type=float, default=0,
-        help='dropout to be used for deep LSTM'
     )
     parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
     parser.add_argument(
@@ -414,9 +393,7 @@ if __name__ == '__main__':
     model = CharLSTM(
         charset_size=len(charset)+1,
         hidden_size=args.hidden_size,
-        bidirectional=args.bidirectional,
-        num_layers=args.num_layers,
-        dropout=args.dropout
+        bidirectional=args.bidirectional
     )
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
