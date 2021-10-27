@@ -33,7 +33,7 @@ PADDING_TOKEN = 0
 # while the second sample is some nonsensical text.
 # intuitively, the perplexity of the first sample should be lower than that
 # of the second.
-# run this script in --mode 'debug' to verify the same.
+# run this script with flag --debug to verify the same.
 # also verify that the difference in perplexity should increase with more
 # training (more epochs).
 
@@ -221,8 +221,6 @@ if __name__ == '__main__':
     # command-line arguments
     # ----------------------
 
-    MODE_DEBUG, MODE_DEV, MODE_FULL = 'debug', 'dev', 'full'
-
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -232,8 +230,11 @@ if __name__ == '__main__':
         help='train English/Hindi LSTM'
     )
     parser.add_argument(
-        '--mode', choices=[MODE_DEBUG, MODE_DEV, MODE_FULL], default=MODE_DEV,
-        help='run this script in debug/dev/full mode'
+        '--debug', action='store_true', default=False, help='run sanity checks'
+    )
+    parser.add_argument(
+        '--samples', type=int, default='all',
+        help='number of samples from canonical corpus used to train the LSTM'
     )
     parser.add_argument(
         '--hidden-size', type=int, default=50, help='size of LSTM hidden layer'
@@ -256,31 +257,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-
-    # use smaller subsets of the whole corpus in debug/dev mode
-    num_lines = None
-    if args.mode == MODE_DEBUG:
-        num_lines = 20
-    elif args.mode == MODE_DEV:
-        num_lines = 10000
+    # both English/Hindi corpora have 1M samples by default
+    if args.samples == 'all':
+        args.samples = 10**6
 
 
     if args.lang == utils.LANG_ENG:
 
         # load the English corpus
         with open(os.path.join(settings.EN_CORPUS_ROOT, 'corpus.txt'), 'r') as f:
-
-            if num_lines is None:
-                corpus = f.readlines()      # read all lines
-            else:
-
-                # load only as many lines as required; this is faster and more
-                # efficient than loading all the lines and keeping only a few
-                # of them.
-                corpus = [f.readline() for _ in range(num_lines)]
+            corpus = [f.readline() for _ in range(args.samples)]
 
         # dataset of noisy samples whose perplexity values have to be calculated
-        if args.mode == MODE_DEBUG:
+        if args.debug:
             perp_dataset = EN_SANITY_CHECKS
         else:
 
@@ -305,12 +294,9 @@ if __name__ == '__main__':
             'r',
             encoding='utf-8'
         ) as f:
-            if num_lines is None:
-                corpus = f.readlines()
-            else:
-                corpus = [f.readline() for _ in range(num_lines)]
+            corpus = [f.readline() for _ in range(args.samples)]
 
-        if args.mode == MODE_DEBUG:
+        if args.debug:
             perp_dataset = HI_SANITY_CHECKS
         else:
             # TODO
@@ -324,7 +310,7 @@ if __name__ == '__main__':
         detok = TreebankWordDetokenizer()
         corpus = [detok.detokenize(doc.split(' ')) for doc in corpus]
 
-    if args.mode != MODE_DEBUG:
+    if not args.debug:
 
         # preprocess the tweets
         perp_dataset = utils.preprocess_tweets(
@@ -500,7 +486,7 @@ if __name__ == '__main__':
             perps.extend(char_perplexity(pred, output_seqs, seq_lengths))
 
 
-    if args.mode == MODE_DEBUG:
+    if args.debug:
         print('Perplexity of:')
         print('Sample clean text: {:.6f}'.format(perps[0]))
         print('Sample noisy text: {:.6f}'.format(perps[1]))
