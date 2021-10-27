@@ -260,7 +260,7 @@ if __name__ == '__main__':
         help='number of hidden layers in LSTM'
     )
     parser.add_argument(
-        '--dropout', type=float, default=0.5,
+        '--dropout', type=float, default=0,
         help='dropout to be used for deep LSTM'
     )
     parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
