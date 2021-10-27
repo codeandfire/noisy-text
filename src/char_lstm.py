@@ -273,17 +273,10 @@ if __name__ == '__main__':
             perp_dataset = EN_SANITY_CHECKS
         else:
 
-            # load the English and Hindi-English tweet datasets
+            # load all splits of the English tweet dataset
             perp_dataset = utils.load_en_tweets_dataset(split='train')
             perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='dev')
             perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='test')
-            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='train')
-            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='dev')
-            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
-
-            # extract the tweet IDs and the text of the tweets
-            perp_ids = [row['tweet_id'] for row in perp_dataset]
-            perp_dataset = [row['text'] for row in perp_dataset]
 
     else:
 
@@ -299,12 +292,21 @@ if __name__ == '__main__':
         if args.debug:
             perp_dataset = HI_SANITY_CHECKS
         else:
-            # TODO
-            pass
+
+            # load all splits of the Hindi-English dataset
+            perp_dataset = utils.load_hi_en_tweets_dataset(split='train')
+            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='dev')
+            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
+
+
+        # extract the tweet IDs and the text of the tweets
+        perp_ids = [row['tweet_id'] for row in perp_dataset]
+        perp_dataset = [row['text'] for row in perp_dataset]
+
 
     if args.lang == utils.LANG_ENG:
 
-        # the following detokenizer correct spacing around punctuation marks;
+        # the following detokenizer corrects spacing around punctuation marks;
         # which is present in this English corpus.
         detok = TreebankWordDetokenizer()
         corpus = [detok.detokenize(doc.split(' ')) for doc in corpus]
