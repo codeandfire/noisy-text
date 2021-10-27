@@ -6,6 +6,7 @@ import string
 from emoji import is_emoji, demojize, replace_emoji
 from indictrans import Transliterator
 from nltk.tokenize.casual import TweetTokenizer
+from nltk.tokenize.treebank import TreebankWordDetokenizer
 
 import settings
 
@@ -173,10 +174,12 @@ def load_hi_en_tweets_dataset(split='train', lang_labels=False):
         r'https\s//\s(t\s\.\sco|t\sco|tco)\s/\s(\w+)'
     )
 
+    # the following detokenizer corrects spacing around punctuation marks
+    detok = TreebankWordDetokenizer()
+
     def detokenize(text):
 
-        # join all tokens, separate by whitespace
-        text = ' '.join(text)
+        text = detok.detokenize(text)
 
         # join all usernames, i.e. turn @ username to @username
         text = user_regexp.sub(r'@\1', text)

@@ -304,9 +304,8 @@ if __name__ == '__main__':
 
     if args.lang == utils.LANG_ENG:
 
-        # the English corpus is in a slightly different format (note the
-        # spacing around punctuations); it needs to be detokenized as follows
-        # to resemble normal English text.
+        # the following detokenizer correct spacing around punctuation marks;
+        # which is present in this English corpus.
         detok = TreebankWordDetokenizer()
         corpus = [detok.detokenize(doc.split(' ')) for doc in corpus]
 
