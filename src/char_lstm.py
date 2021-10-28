@@ -304,12 +304,12 @@ if __name__ == '__main__':
             perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
 
         
-        # truncate sequences to a maximum length
-        corpus = [doc[:MAX_SEQ_LENGTH] for doc in corpus]
+    # truncate sequences to a maximum length
+    corpus = [doc[:MAX_SEQ_LENGTH] for doc in corpus]
 
-        # extract the tweet IDs and the text of the tweets
-        perp_ids = [row['tweet_id'] for row in perp_dataset]
-        perp_dataset = [row['text'] for row in perp_dataset]
+    # extract the tweet IDs and the text of the tweets
+    perp_ids = [row['tweet_id'] for row in perp_dataset]
+    perp_dataset = [row['text'] for row in perp_dataset]
 
 
     if args.lang == utils.LANG_ENG:
