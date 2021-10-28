@@ -26,6 +26,11 @@ import utils
 PADDING_TOKEN = 0
 
 
+# maximum allowed length of clean sample sequences (not tweets);
+# sequences beyond this length will be truncated.
+MAX_SEQ_LENGTH = 200
+
+
 # sanity checks for the model.
 # two samples are provided each for English and Hindi.
 # in both cases, the first sample is the first line of the canonical corpus
@@ -298,6 +303,9 @@ if __name__ == '__main__':
             perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='dev')
             perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
 
+        
+        # truncate sequences to a maximum length
+        corpus = [doc[:MAX_SEQ_LENGTH] for doc in corpus]
 
         # extract the tweet IDs and the text of the tweets
         perp_ids = [row['tweet_id'] for row in perp_dataset]
