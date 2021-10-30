@@ -341,3 +341,35 @@ def back_transliterate(text, lang_labels=None):
             translit_text.append(t)
 
     return translit_text
+
+
+def write_subset(subset, filename):
+    with open(filename, 'w') as f:
+        f.write('\n'.join([s['tweet_id'] for s in subset]))
+
+
+def load_subset(base_dataset, subset_filename):
+
+    with open(subset_filename, 'r') as f:
+        tweet_ids = [line.strip() for line in f.readlines()]
+
+    # sorting to search for the tweet IDs more efficiently;
+    # rather than something like
+    # subset = [
+    #   d for d in base_dataset if d['tweet_id'] in tweet_ids
+    # ]
+    # which can be very slow.
+    tweet_ids.sort()
+    base_dataset.sort(key=lambda d: d['tweet_id'])
+
+    c = 0
+    subset = []
+    for d in base_dataset:
+        try:
+            if d['tweet_id'] == tweet_ids[c]:
+                subset.append(d)
+                c = c + 1
+        except IndexError:  # no more tweet IDs to search for
+            break
+
+    return subset
