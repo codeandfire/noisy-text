@@ -1,3 +1,5 @@
+"""Utility functions."""
+
 import csv
 import os
 import re
@@ -21,10 +23,17 @@ HTTPURL_SYMBOL = 'HTTPURL'
 HASHTAG_SYMBOL = '#HASHTAG'
 EMOJI_SYMBOL = 'EMOJI'
 
+
+# for back-transliteration from Roman script to Devanagari
 _trn = Transliterator(source=LANG_ENG, target=LANG_HIN, build_lookup=True)
 
 
 def load_eng_tweets_dataset(split='train'):
+    """Load English tweets dataset (SemEval-2017 Task 4 Subtask A dataset).
+
+    Specify which split to load. Default is 'train', you can also specify
+    'dev' or 'test'.
+    """
 
     if split == 'train' or split == 'dev':
         filename = 'train-dev.txt'
@@ -71,6 +80,13 @@ def load_eng_tweets_dataset(split='train'):
 
 
 def load_hin_eng_tweets_dataset(split='train', lang_labels=False):
+    """Load Hindi-English tweets dataset (SemEval-2020 Task 9 Dataset).
+
+    Specify which split to load. Default is 'train', you can also specify
+    'dev' or 'test'.
+
+    If word-level language labels are required, specify lang_labels=True.
+    """
     
     if split == 'train':
         filename = 'train.txt'
