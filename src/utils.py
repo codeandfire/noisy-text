@@ -33,6 +33,9 @@ def load_eng_tweets_dataset(split='train'):
 
     Specify which split to load. Default is 'train', you can also specify
     'dev' or 'test'.
+
+    Returns the dataset as a list of dictionaries, with keys 'tweet_id',
+    'text' and 'label'.
     """
 
     if split == 'train' or split == 'dev':
@@ -86,6 +89,9 @@ def load_hin_eng_tweets_dataset(split='train', lang_labels=False):
     'dev' or 'test'.
 
     If word-level language labels are required, specify lang_labels=True.
+
+    Returns the dataset as a list of dictionaries, with keys 'tweet_id',
+    'text' and 'label', and also 'lang_labels' if lang_labels=True.
     """
     
     if split == 'train':
