@@ -24,7 +24,7 @@ EMOJI_SYMBOL = 'EMOJI'
 _trn = Transliterator(source=LANG_ENG, target=LANG_HIN, build_lookup=True)
 
 
-def load_en_tweets_dataset(split='train'):
+def load_eng_tweets_dataset(split='train'):
 
     if split == 'train' or split == 'dev':
         filename = 'train-dev.txt'
@@ -70,7 +70,7 @@ def load_en_tweets_dataset(split='train'):
     return dataset
 
 
-def load_hi_en_tweets_dataset(split='train', lang_labels=False):
+def load_hin_eng_tweets_dataset(split='train', lang_labels=False):
     
     if split == 'train':
         filename = 'train.txt'
@@ -209,7 +209,7 @@ def load_hi_en_tweets_dataset(split='train', lang_labels=False):
                 l.lower() for l in dataset[d]['lang_labels']
             ]
 
-            # after detokenization, the language labels do not correspond to
+            # after detokenization, the language labels do not correspond to the
             # same tokens since many of the tokens have been joined together.
             # a way to preserve the label information is to convert the list of
             # labels into a mapping from the original tokens to the labels.
@@ -233,7 +233,44 @@ def preprocess_tweets(
     emoji_to_text=False,
     normalize_misc_unicode=True
 ):
+    """Preprocess tweet samples.
 
+    Arguments
+    ---------
+
+        tweets : list of str
+            the text of the tweets.
+
+        tokenize : bool
+            use NLTK's TweetTokenizer to tokenize the tweets.
+
+        mask_user : bool
+            convert user mentions to special token.
+
+        mask_httpurl : bool
+            convert HTTP URLs to special token.
+
+        mask_hashtag  : bool
+            convert hashtags to special token.
+
+        mask_emoji : bool
+            convert emojis to special token.
+
+        emoji_to_text : bool
+            utilize `emoji' package to convert emojis to textual descriptions.
+            not applicable if mask_emoji=True.
+
+        normalize_misc_unicode : bool
+            normalize miscellaneous Unicode characters that can be replaced by
+            regular ASCII characters.
+
+        Returns
+        -------
+            a list of strings if tokenize=False, otherwise a list of lists of
+            strings if tokenize=True.
+    """
+
+    # regexes to identify user mentions, HTTP URLs and hashtags
     user_regexp = re.compile(r'@\S+')
     httpurl_regexp = re.compile(r'http\S+|www\S+')
     hashtag_regexp = re.compile(r'#\S+')
