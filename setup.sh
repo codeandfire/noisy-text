@@ -431,6 +431,7 @@ function clean () {
 	modify_setting 'HI_EN_TWEETS_ROOT' 'None'
 	modify_setting 'EN_CORPUS_ROOT' 'None'
 	modify_setting 'HI_CORPUS_ROOT' 'None'
+	modify_setting 'CHALLENGE_ROOT' 'None'
 }
 
 
@@ -487,7 +488,15 @@ while getopts 'hcs' opt; do
 done
 shift "$(($OPTIND-1))"
 
+
 # execute all steps
+
+# this is an additional step to set up a directory for storing the challenge
+# test sets
+challenge_root='challenge'
+mkdir -p "$challenge_root/"
+modify_setting 'CHALLENGE_ROOT' "'$PWD/$challenge_root/'"
+
 pip_install
 bert_download
 glove_download
