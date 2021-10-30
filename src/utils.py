@@ -300,7 +300,22 @@ def preprocess_tweets(
     return tweets
 
 
-def back_transliterate(text, mask=None):
-    if mask is None:
+def back_transliterate(text, lang_labels=None):
+    """Back-transliterate from Roman script to Devanagari.
+
+    Optionally accepts a list of language labels, in which case it back-
+    transliterates only those tokens marked as LANG_HIN. In this case, `text'
+    must be a list of strings (tokens) rather than a single string.
+    """
+
+    if lang_labels is None:
         return _trn.transform(text)
-    return [(_trn.transform(t) if m else t) for m, t in zip(mask, tokens)]
+
+    translit_text = []
+    for i, t in enumerate(text):
+        if lang_labels[i] == LANG_HIN:
+            translit_text.append(_trn.transform(t))
+        else:
+            translit_text.append(t)
+
+    return translit_text
