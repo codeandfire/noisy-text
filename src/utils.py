@@ -348,9 +348,9 @@ def write_subset(subset, filename):
         f.write('\n'.join([s['tweet_id'] for s in subset]))
 
 
-def load_subset(base_dataset, subset_filename):
+def load_subset(filename, dataset):
 
-    with open(subset_filename, 'r') as f:
+    with open(filename, 'r') as f:
         tweet_ids = [line.strip() for line in f.readlines()]
 
     # sorting to search for the tweet IDs more efficiently;
@@ -360,16 +360,50 @@ def load_subset(base_dataset, subset_filename):
     # ]
     # which can be very slow.
     tweet_ids.sort()
-    base_dataset.sort(key=lambda d: d['tweet_id'])
+    dataset.sort(key=lambda d: d['tweet_id'])
 
     c = 0
     subset = []
-    for d in base_dataset:
+    for d in dataset:
         try:
             if d['tweet_id'] == tweet_ids[c]:
                 subset.append(d)
                 c = c + 1
-        except IndexError:  # no more tweet IDs to search for
+        except IndexError:  # c is out of bounds
             break
 
     return subset
+
+
+def write_perplexities(dataset, filename):
+
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f, delimiter=',')
+        for d in dataset:
+            writer.writerow([d['tweet_id'], '{:.8f}'.format(d['perplexity'])])
+
+
+def load_perplexities(filename, dataset):
+
+    with open(filename, 'r', newline='') as f:
+        reader = csv.DictReader(
+            f,
+            fieldnames=['tweet_id', 'perplexity'],
+            delimiter=','
+        )
+        perps = list(reader)
+
+    # again, sorting to search efficiently.
+    perps.sort(key=lambda p: p['tweet_id'])
+    dataset.sort(key=lambda d: d['tweet_id'])
+
+    c = 0
+    for d in range(len(dataset)):
+        try:
+            if dataset[d]['tweet_id'] == perps[c]['tweet_id']:
+                dataset[d]['perplexity'] = perps[c]['perplexity']
+                c = c + 1
+        except IndexError:   # c is out of bounds
+            break
+
+    return dataset
