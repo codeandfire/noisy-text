@@ -420,10 +420,10 @@ def load_perplexities(filename, dataset):
     dataset.sort(key=lambda d: d['tweet_id'])
 
     c = 0
-    for d in range(len(dataset)):
+    for p in perps:
         try:
-            if dataset[d]['tweet_id'] == perps[c]['tweet_id']:
-                dataset[d]['perplexity'] = perps[c]['perplexity']
+            if p['tweet_id'] == dataset[c]['tweet_id']:
+                dataset[c]['perplexity'] = p['perplexity']
                 c = c + 1
         except IndexError:   # c is out of bounds
             break
