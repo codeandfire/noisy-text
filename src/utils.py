@@ -344,11 +344,22 @@ def back_transliterate(text, lang_labels=None):
 
 
 def write_subset(subset, filename):
+    """Write a subset of a dataset to a file.
+
+    `subset` must be a list of dictionaries, each having the key 'tweet_id'.
+    """
+
     with open(filename, 'w') as f:
         f.write('\n'.join([s['tweet_id'] for s in subset]))
 
 
 def load_subset(filename, dataset):
+    """Load a subset of a dataset from a file.
+
+    `dataset` must be a list of dictionaries, each having the key 'tweet_id',
+    among others. The entries of `dataset' that are present in the subset are
+    returned.
+    """
 
     with open(filename, 'r') as f:
         tweet_ids = [line.strip() for line in f.readlines()]
@@ -376,6 +387,11 @@ def load_subset(filename, dataset):
 
 
 def write_perplexities(dataset, filename):
+    """Write perplexities to file.
+
+    `dataset` must be a list of dictionaries, each having the keys 'tweet_id'
+    and 'perplexity'.
+    """
 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f, delimiter=',')
@@ -384,6 +400,12 @@ def write_perplexities(dataset, filename):
 
 
 def load_perplexities(filename, dataset):
+    """Load perplexities from a file.
+
+    `dataset` must be a list of dictionaries, each having the key 'tweet_id'.
+    The key 'perplexity' is added to each of these dictionaries, with the
+    corresponding perplexity value, and the entire list is returned.
+    """
 
     with open(filename, 'r', newline='') as f:
         reader = csv.DictReader(
