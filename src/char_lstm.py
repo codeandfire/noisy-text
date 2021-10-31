@@ -516,7 +516,7 @@ if __name__ == '__main__':
     for d in range(len(dataset)):
         dataset[d]['perplexity'] = perps[d]
 
-    utils.write_perplexities(dataset, settings.PERPLEXITIES_FILE)
+    utils.write_perplexities(dataset)
 
 
     # save the model

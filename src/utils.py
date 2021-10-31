@@ -13,8 +13,13 @@ from nltk.tokenize.treebank import TreebankWordDetokenizer
 import settings
 
 
+# language labels
+
 LANG_ENG = 'eng'
 LANG_HIN = 'hin'
+
+
+# special tokens
 
 START_SYMBOL = '<S>'
 END_SYMBOL = '</S>'
@@ -386,7 +391,7 @@ def load_subset(filename, dataset):
     return subset
 
 
-def write_perplexities(dataset, filename):
+def write_perplexities(dataset):
     """Write perplexities to file.
 
     `dataset` must be a list of dictionaries, each having the keys 'tweet_id'
@@ -394,7 +399,7 @@ def write_perplexities(dataset, filename):
     """
 
     with open(
-        os.path.join(settings.CHALLENGE_ROOT, filename),
+        os.path.join(settings.CHALLENGE_ROOT, settings.PERPLEXITIES_FILE),
         'w', newline=''
     ) as f:
 
@@ -403,8 +408,8 @@ def write_perplexities(dataset, filename):
             writer.writerow([d['tweet_id'], '{:.8f}'.format(d['perplexity'])])
 
 
-def load_perplexities(filename, dataset):
-    """Load perplexities from a file.
+def load_perplexities(dataset):
+    """Load perplexity values for tweets in `dataset`.
 
     `dataset` must be a list of dictionaries, each having the key 'tweet_id'.
     The key 'perplexity' is added to each of these dictionaries, with the
@@ -412,7 +417,7 @@ def load_perplexities(filename, dataset):
     """
 
     with open(
-        os.path.join(settings.CHALLENGE_ROOT, filename),
+        os.path.join(settings.CHALLENGE_ROOT, settings.PERPLEXITIES_FILE),
         'r', newline=''
     ) as f:
 
