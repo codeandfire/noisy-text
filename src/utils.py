@@ -349,7 +349,7 @@ def write_subset(subset, filename):
     `subset` must be a list of dictionaries, each having the key 'tweet_id'.
     """
 
-    with open(filename, 'w') as f:
+    with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'w') as f:
         f.write('\n'.join([s['tweet_id'] for s in subset]))
 
 
@@ -361,7 +361,7 @@ def load_subset(filename, dataset):
     returned.
     """
 
-    with open(filename, 'r') as f:
+    with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'r') as f:
         tweet_ids = [line.strip() for line in f.readlines()]
 
     # sorting to search for the tweet IDs more efficiently;
@@ -393,7 +393,11 @@ def write_perplexities(dataset, filename):
     and 'perplexity'.
     """
 
-    with open(filename, 'w', newline='') as f:
+    with open(
+        os.path.join(settings.CHALLENGE_ROOT, filename),
+        'w', newline=''
+    ) as f:
+
         writer = csv.writer(f, delimiter=',')
         for d in dataset:
             writer.writerow([d['tweet_id'], '{:.8f}'.format(d['perplexity'])])
@@ -407,7 +411,11 @@ def load_perplexities(filename, dataset):
     corresponding perplexity value, and the entire list is returned.
     """
 
-    with open(filename, 'r', newline='') as f:
+    with open(
+        os.path.join(settings.CHALLENGE_ROOT, filename),
+        'r', newline=''
+    ) as f:
+
         reader = csv.DictReader(
             f,
             fieldnames=['tweet_id', 'perplexity'],
