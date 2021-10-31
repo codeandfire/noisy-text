@@ -1,10 +1,13 @@
-"""Character-level LSTM trained on clean, canonical corpora,
-and used to find the perplexity of noisy samples.
+"""Character-level LSTM trained on canonical Hindi and English corpora.
+
+The perplexity of this model can be considered as a measure of how "noisy" a
+given English/Hindi tweet sample is.
 """
 
 import argparse
 import logging
 import os
+import random
 
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 import torch
@@ -28,28 +31,7 @@ PADDING_TOKEN = 0
 
 # maximum allowed length of clean sample sequences (not tweets);
 # sequences beyond this length will be truncated.
-MAX_SEQ_LENGTH = 200
-
-
-# sanity checks for the model.
-# two samples are provided each for English and Hindi.
-# in both cases, the first sample is the first line of the canonical corpus
-# and has been encountered by the model during training,
-# while the second sample is some nonsensical text.
-# intuitively, the perplexity of the first sample should be lower than that
-# of the second.
-# run this script with flag --debug to verify the same.
-# also verify that the difference in perplexity should increase with more
-# training (more epochs).
-
-EN_SANITY_CHECKS = (
-    'The U.S. Centers for Disease Control and Prevention initially advised school systems to close if outbreaks occurred, then reversed itself, saying the apparent mildness of the virus meant most schools and day care centers should stay open, even if they had confirmed cases of swine flu.',
-    'oiojdalkjdslkasajdlka'
-)
-HI_SANITY_CHECKS = (
-    u'आवेदन करने की आखिरी तारीख 31 जनवरी, 2020 है।',
-    u'कखाीूैपूैतंिपुफाडडड'
-)
+MAX_SEQ_LENGTH = 225
 
 
 class CharDataset(Dataset):
@@ -115,12 +97,15 @@ class CharLSTM(nn.Module):
         self,
         charset_size,
         hidden_size,
+        num_layers=1,
+        dropout=0,
         bidirectional=False
     ):
         """Initialize the model.
 
         Pass the size of character set (charset), the hidden size of the LSTM,
-        and whether the LSTM should be bidirectional or not.
+        the number of layers in the LSTM, dropout used in the LSTM, and
+        whether the LSTM should be bidirectional or not.
         """
 
         super().__init__()
@@ -137,6 +122,8 @@ class CharLSTM(nn.Module):
         self.lstm = nn.LSTM(
             input_size=charset_size,
             hidden_size=hidden_size,
+            num_layers=num_layers,
+            dropout=dropout,
             batch_first=True,
             bidirectional=bidirectional
         )
@@ -220,35 +207,37 @@ def char_perplexity(pred, output_seqs, seq_lengths):
     return perps
 
 
+# main script
+
 if __name__ == '__main__':
 
 
     # command-line arguments
-    # ----------------------
 
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--lang', choices=[utils.LANG_ENG, utils.LANG_HIN], default=utils.LANG_ENG,
-        help='train English/Hindi LSTM'
+        '--samples', type=int, default=10**6,
+        help='number of clean samples from both the English/Hindi corpora used for training'
     )
     parser.add_argument(
-        '--debug', action='store_true', default=False, help='run sanity checks'
+        '--hidden-size', type=int, default=50, help='hidden dimensionality of LSTM'
     )
     parser.add_argument(
-        '--samples', type=int, default='all',
-        help='number of samples from canonical corpus used to train the LSTM'
+        '--num-layers', type=int, default=1, help='number of hidden layers in LSTM'
     )
     parser.add_argument(
-        '--hidden-size', type=int, default=50, help='size of LSTM hidden layer'
+        '--dropout', type=float, default=0.0, help='dropout used in LSTM'
     )
     parser.add_argument(
         '--bidirectional', action='store_true', default=False,
         help='use a bidirectional LSTM'
     )
-    parser.add_argument('--lr', type=float, default=1e-2, help='learning rate')
+    parser.add_argument(
+        '--learning-rate', type=int, default=1e-2, help='learning rate'
+    )
     parser.add_argument(
         '--batch-size', type=int, default=256, help='batch size'
     )
@@ -262,132 +251,166 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # both English/Hindi corpora have 1M samples by default
-    if args.samples == 'all':
-        args.samples = 10**6
 
+    # load the canonical corpora
 
-    if args.lang == utils.LANG_ENG:
+    with open(os.path.join(settings.ENG_CORPUS_ROOT, 'corpus.txt'), 'r') as f:
+        corpus = [f.readline() for _ in range(args.samples)]
 
-        # load the English corpus
-        with open(os.path.join(settings.EN_CORPUS_ROOT, 'corpus.txt'), 'r') as f:
-            corpus = [f.readline() for _ in range(args.samples)]
+    # the following detokenizer corrects spacing around punctuation marks;
+    # which is present in this English corpus.
+    detok = TreebankWordDetokenizer()
+    corpus = [detok.detokenize(doc.split(' ')) for doc in corpus]
 
-        # dataset of noisy samples whose perplexity values have to be calculated
-        if args.debug:
-            perp_dataset = EN_SANITY_CHECKS
-        else:
+    with open(
+        os.path.join(settings.HIN_CORPUS_ROOT, 'corpus.txt'), 'r',
+        encoding='utf-8'     # for Devanagari characters
+    ) as f:
+        corpus.extend([f.readline() for _ in range(args.samples)])
 
-            # load all splits of the English tweet dataset
-            perp_dataset = utils.load_en_tweets_dataset(split='train')
-            perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='dev')
-            perp_dataset = perp_dataset + utils.load_en_tweets_dataset(split='test')
+    # IMPORTANT! shuffle the corpus.
+    random.seed(123)
+    random.shuffle(corpus)
 
-    else:
-
-        # load the Hindi corpus
-        # note the utf-8 encoding for Devanagari characters
-        with open(
-            os.path.join(settings.HI_CORPUS_ROOT, 'corpus.txt'),
-            'r',
-            encoding='utf-8'
-        ) as f:
-            corpus = [f.readline() for _ in range(args.samples)]
-
-        if args.debug:
-            perp_dataset = HI_SANITY_CHECKS
-        else:
-
-            # load all splits of the Hindi-English dataset
-            perp_dataset = utils.load_hi_en_tweets_dataset(split='train')
-            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='dev')
-            perp_dataset = perp_dataset + utils.load_hi_en_tweets_dataset(split='test')
-
+    for c in range(len(corpus)):
         
-    # truncate sequences to a maximum length
-    corpus = [doc[:MAX_SEQ_LENGTH] for doc in corpus]
+        # truncate sequences to a maximum length
+        corpus[c] = corpus[c][:MAX_SEQ_LENGTH]
 
-    # extract the tweet IDs and the text of the tweets
-    perp_ids = [row['tweet_id'] for row in perp_dataset]
-    perp_dataset = [row['text'] for row in perp_dataset]
+        # tokenize into characters, add start- and end-of-sentence symbols
+        corpus[c] = [utils.START_SYMBOL] + list(corpus[c]) + [utils.END_SYMBOL]
 
-
-    if args.lang == utils.LANG_ENG:
-
-        # the following detokenizer corrects spacing around punctuation marks;
-        # which is present in this English corpus.
-        detok = TreebankWordDetokenizer()
-        corpus = [detok.detokenize(doc.split(' ')) for doc in corpus]
-
-    if not args.debug:
-
-        # preprocess the tweets
-        perp_dataset = utils.preprocess_tweets(
-            perp_dataset,
-            tokenize=False,
-            mask_user=True,
-            mask_httpurl=True,
-            mask_hashtag=False,
-            mask_emoji=True
-        )
-
-        # remove tokens representing user mentions, URLs and emojis
-        # also remove the leading # of hashtags.
-        for i in range(len(perp_dataset)):
-            for symbol in [
-                utils.USER_SYMBOL,
-                utils.HTTPURL_SYMBOL,
-                utils.EMOJI_SYMBOL,
-                '#'
-            ]:
-                perp_dataset[i] = perp_dataset[i].replace(symbol, '')
-
-        # for Hindi, additionally back-transliterate
-        if args.lang == utils.LANG_HIN:
-            perp_dataset = [
-                utils.back_transliterate(text) for text in perp_dataset
-            ]
-
-    # add start- and end-of-sentence tags; tokenize into characters
-    corpus = [
-        [utils.START_SYMBOL] + list(doc) + [utils.END_SYMBOL]
-        for doc in corpus
-    ]
-    perp_dataset = [
-        [utils.START_SYMBOL] + list(doc) + [utils.END_SYMBOL]
-        for doc in perp_dataset
-    ]
-
-    # the set of unique characters in the corpus (the "vocabulary" for a
-    # character-level model)
+    # the set of unique characters; the "vocabulary" of a character-level model
     charset = sorted(set([c for doc in corpus for c in doc]))
 
-    # convert characters to indices
+    # convert characters to indices.
     # adding 1 to the indices to accommodate for the padding token at
     # position 0.
     char_to_idx = {c: i+1 for i, c in enumerate(charset)}
     corpus = [[char_to_idx[c] for c in doc] for doc in corpus]
 
 
-    # perform the same conversion on perp_dataset
-    # however, perp_dataset may contain OOV characters (characters not in
-    # charset) -- ignore these.
+    # load the noisy tweet samples
+    
+    dataset = []
 
-    perp_dataset = [
-        [char_to_idx.get(c, None) for c in doc] for doc in perp_dataset
-    ]
+    # markers to mark subsets of the dataset that have to be back-transliterated
+    markers = {
+        'translit-all': None,
+        'translit-only-hin': None
+    }
 
-    # filter out OOV characters
-    perp_dataset = [
-        [c for c in doc if c is not None] for doc in perp_dataset
-    ]
+    dataset.extend(utils.load_eng_tweets_dataset(split='train'))
+    dataset.extend(utils.load_eng_tweets_dataset(split='dev'))
+    dataset.extend(utils.load_eng_tweets_dataset(split='test'))
+
+    codemix = utils.load_hin_eng_tweets_dataset(split='train', lang_labels=True)
+    codemix.extend(utils.load_hin_eng_tweets_dataset(
+        split='dev', lang_labels=True
+    ))
+    codemix.extend(utils.load_hin_eng_tweets_dataset(
+        split='test', lang_labels=True
+    ))
+
+    dataset.extend(utils.load_subset(settings.CODEMIX_ALL_ENG_FILE, codemix))
+
+    markers['translit-all'] = len(dataset)
+    dataset.extend(utils.load_subset(settings.CODEMIX_ALL_HIN_FILE, codemix))
+
+    markers['translit-only-hin'] = len(dataset)
+    dataset.extend(utils.load_subset(settings.CODEMIX_MIXED_FILE, codemix))
+
+
+    # separately extract the text of the tweets for preprocessing.
+    tweets = [d['text'] for d in dataset]
+
+    # first, preprocess all those tweets that either require no/complete back-
+    # transliteration.
+    tweets[ : markers['translit-only-hin'] ] = utils.preprocess_tweets(
+        tweets[ : markers['translit-only-hin'] ],
+        tokenize=False,
+        mask_user=True,
+        mask_httpurl=True,
+        mask_hashtag=False,
+        mask_emoji=True
+    )
+
+    # strip user mentions, URLs, emojis, the leading # of hashtags
+    for t in range(0, markers['translit-only-hin']):
+        for symbol in [
+            utils.USER_SYMBOL,
+            utils.HTTPURL_SYMBOL,
+            utils.EMOJI_SYMBOL,
+            '#'
+        ]:
+            tweets[t] = tweets[t].replace(symbol, '')
+
+    # back-transliterate those tweets which require complete back-
+    # transliteration.
+    for t in range(markers['translit-all'], markers['translit-only-hin']):
+        tweets[t] = utils.back_transliterate(tweets[t])
+
+
+    # next, handle the scenario where only some words have to be back-
+    # transliterated.
+
+    # the preprocessing remains the same, except that the tweets have to be
+    # tokenized in order to back-transliterate only selective tokens.
+    tweets[ markers['translit-only-hin'] : ] = utils.preprocess_tweets(
+        tweets[ markers['translit-only-hin'] : ],
+        tokenize=True,
+        mask_user=True,
+        mask_httpurl=True,
+        mask_hashtag=False,
+        mask_emoji=True
+    )
+
+    for t in range(markers['translit-only-hin'], len(tweets)):
+
+        # strip the same things as before, except now they have to be removed
+        # from a list of tokens instead of a single string.
+        tweets[t] = [
+            w.replace('#', '') for w in tweets[t]
+            if w not in [
+                utils.USER_SYMBOL, utils.HTTPURL_SYMBOL, utils.EMOJI_SYMBOL
+            ]
+        ]
+
+        # adjust the language labels to match the tokens.
+        dataset[t]['lang_labels'] = [
+            dataset[t]['lang_labels'].get(w) for w in tweets[t]
+        ]
+
+        # back-transliterate only selective tokens.
+        tweets[t] = utils.back_transliterate(
+            tweets[t], lang_labels=dataset[t]['lang_labels']
+        )
+
+        # detokenize: join back all the tokens.
+        tweets[t] = ' '.join(tweets[t])
+
+
+    for t in range(len(tweets)):
+
+        # tokenize into characters, add start- and end-of-sentence symbols
+        tweets[t] = [utils.START_SYMBOL] + list(tweets[t]) + [utils.END_SYMBOL]
+
+        # convert characters to indices
+        tweets[t] = [char_to_idx.get(w) for w in tweets[t]]
+
+        # filter out OOV characters (characters not in charset)
+        tweets[t] = [w for w in tweets[t] if w is not None]
+
+        # all preprocessing is done, put the tweets back in the dataset
+        dataset[t]['text'] = tweets[t][:]
+
 
     # initialize the model
-    # adding one to the size of the charset, again to accommodate for the
-    # padding token.
     model = CharLSTM(
-        charset_size=len(charset)+1,
+        charset_size=len(charset)+1,    # +1 to accommodate for the padding token
         hidden_size=args.hidden_size,
+        num_layers=args.num_layers,
+        dropout=args.dropout,
         bidirectional=args.bidirectional
     )
 
@@ -398,19 +421,17 @@ if __name__ == '__main__':
 
 
     # training
-    # --------
 
     # prepare the dataset
-    dataset = CharDataset(corpus)
+    char_dataset = CharDataset(corpus)
     dataloader = DataLoader(
-        dataset,
+        char_dataset,
         batch_size=args.batch_size,
         shuffle=True,
         pin_memory=True,
-        collate_fn=dataset.collate_fn
+        collate_fn=corpus.collate_fn
     )
 
-    # cross entropy loss
     # ignore_index=PADDING_TOKEN tells the loss function to ignore the padding
     # token in sequences while calculating the loss.
     loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=PADDING_TOKEN)
@@ -421,6 +442,8 @@ if __name__ == '__main__':
     logging.basicConfig(filename='train.log', filemode='w', level=logging.INFO)
     print('Periodic record of training loss will be written to train.log.')
 
+
+    # training loop
     for epoch_idx in range(args.epochs):
 
         if args.epochs > 1:
@@ -461,29 +484,27 @@ if __name__ == '__main__':
 
 
     # perplexity calculation
-    # ----------------------
 
-    # put the model in inference mode
+    # IMPORTANT! put the model in inference mode.
     model.eval()
 
     # prepare the dataset
-    dataset = CharDataset(perp_dataset)
+    char_dataset = CharDataset(dataset)
     dataloader = DataLoader(
-        dataset,
+        char_dataset,
         batch_size=args.batch_size,
-        shuffle=False,
+        shuffle=False,   # IMPORTANT! don't shuffle.
         pin_memory=True,
         collate_fn=dataset.collate_fn
     )
 
-    # perplexity values
     perps = []
 
     with torch.no_grad():
 
         for batch_idx, batch in tqdm(
             enumerate(dataloader),
-            desc='perplexity calculation',
+            desc='perplexity values',
             total=len(dataloader),
             unit='batch'
         ):
@@ -495,25 +516,13 @@ if __name__ == '__main__':
             perps.extend(char_perplexity(pred, output_seqs, seq_lengths))
 
 
-    if args.debug:
-        print('Perplexity of:')
-        print('Sample clean text: {:.6f}'.format(perps[0]))
-        print('Sample noisy text: {:.6f}'.format(perps[1]))
-    else:
+    # add these perplexities to the dataset
+    for d in range(len(dataset)):
+        dataset[d]['perplexity'] = perps[d]
 
-        # write the perplexity values to file
-        filename = 'tweet_perplexities_{}.txt'.format(args.lang)
-        with open(filename, 'w') as f:
-
-            # write the tweet ID and perplexity value, separated by a comma
-            f.write('\n'.join([
-                '{},{:.6f}'.format(i, p) for i, p in zip(perp_ids, perps)
-            ]))
-
-        print('Perplexities written to {}'.format(filename))
+    utils.write_perplexities(dataset, settings.PERPLEXITIES_FILE)
 
 
     # save the model
-    filename = 'char_lstm_{}.pt'.format(args.lang)
-    torch.save(model.state_dict(), filename)
-    print('Model saved to {}'.format(filename))
+    torch.save(model.state_dict(), 'char_lstm.pt')
+    print('Model saved to {}'.format('char_lstm.pt'))
