@@ -349,28 +349,38 @@ def back_transliterate(text, lang_labels=None):
     return translit_text
 
 
-def write_subset(subset, filename):
-    """Write a subset to file.
+def write_subset(subset, testset_name):
+    """Write a subset (of some dataset) as a test set.
 
+    `testset_name` must be a string value, a key in the dictionary
+    `settings.TESTSET_FILENAMES`.
     `subset` must be a regular dataset: a list of entries represented by
     dictionaries, each dictionary having key 'tweet_id'.
     """
 
-    with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'w') as f:
+    with open(
+        os.path.join(
+            settings.CHALLENGE_ROOT, settings.TESTSET_FILENAMES[testset_name]
+        ), 'w'
+    ) as f:
         f.write('\n'.join([s['tweet_id'] for s in subset]))
 
 
-def load_subset(filename, dataset):
-    """Load a subset of `dataset` from file.
+def load_subset(testset_name, dataset):
+    """Load a subset of `dataset` containing only those of its entries that
+    are present in a given test set.
 
+    `testset_name` must be a string value, a key in the dictionary
+    `settings.TESTSET_FILENAMES`.
     `dataset` must be a list of entries represented by dictionaries, each
     dictionary having key 'tweet_id'.
-
-    Returns `dataset` with only those entries that are present in the given
-    file.
     """
 
-    with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'r') as f:
+    with open(
+        os.path.join(
+            settings.CHALLENGE_ROOT, settings.TESTSET_FILENAMES[testset_name]
+        ), 'r'
+    ) as f:
         tweet_ids = [line.strip() for line in f.readlines()]
 
     # using binary search; ordinary search may be slow.
