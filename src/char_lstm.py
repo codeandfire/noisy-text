@@ -268,10 +268,6 @@ if __name__ == '__main__':
     ) as f:
         corpus.extend([f.readline() for _ in range(args.samples)])
 
-    # IMPORTANT! shuffle the corpus.
-    random.seed(123)
-    random.shuffle(corpus)
-
     for c in range(len(corpus)):
         
         # truncate sequences to a maximum length
@@ -427,16 +423,16 @@ if __name__ == '__main__':
     dataloader = DataLoader(
         char_dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=True,   # IMPORTANT! shuffle the corpus.
         pin_memory=True,
-        collate_fn=corpus.collate_fn
+        collate_fn=char_dataset.collate_fn
     )
 
     # ignore_index=PADDING_TOKEN tells the loss function to ignore the padding
     # token in sequences while calculating the loss.
     loss_fn = CrossEntropyLoss(reduction='mean', ignore_index=PADDING_TOKEN)
 
-    optimizer = Adam(model.parameters(), lr=args.lr)
+    optimizer = Adam(model.parameters(), lr=args.learning_rate)
 
     # set up logging
     logging.basicConfig(filename='train.log', filemode='w', level=logging.INFO)
@@ -489,13 +485,13 @@ if __name__ == '__main__':
     model.eval()
 
     # prepare the dataset
-    char_dataset = CharDataset(dataset)
+    char_dataset = CharDataset([d['text'] for d in dataset])
     dataloader = DataLoader(
         char_dataset,
         batch_size=args.batch_size,
         shuffle=False,   # IMPORTANT! don't shuffle.
         pin_memory=True,
-        collate_fn=dataset.collate_fn
+        collate_fn=char_dataset.collate_fn
     )
 
     perps = []
