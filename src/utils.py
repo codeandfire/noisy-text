@@ -305,7 +305,7 @@ def preprocess_tweets(
         tweets = [hashtag_regexp.sub(HASHTAG_SYMBOL, t) for t in tweets]
 
     if mask_emoji:
-        tweets = [replace_emoji(t, EMOJI_SYMBOL) for t in tweets]
+        tweets = [replace_emoji(t, ' '+EMOJI_SYMBOL+' ') for t in tweets]
     elif emoji_to_text:
         tweets = [demojize(t, delimiters=(' ', ' ')) for t in tweets]
 
