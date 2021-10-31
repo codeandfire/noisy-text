@@ -349,9 +349,10 @@ def back_transliterate(text, lang_labels=None):
 
 
 def write_subset(subset, filename):
-    """Write a subset of a dataset to a file.
+    """Write a subset to file.
 
-    `subset` must be a list of dictionaries, each having the key 'tweet_id'.
+    `subset` must be a regular dataset: a list of entries represented by
+    dictionaries, each dictionary having key 'tweet_id'.
     """
 
     with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'w') as f:
@@ -359,11 +360,13 @@ def write_subset(subset, filename):
 
 
 def load_subset(filename, dataset):
-    """Load a subset of a dataset from a file.
+    """Load a subset of `dataset` from file.
 
-    `dataset` must be a list of dictionaries, each having the key 'tweet_id',
-    among others. The entries of `dataset' that are present in the subset are
-    returned.
+    `dataset` must be a list of entries represented by dictionaries, each
+    dictionary having key 'tweet_id'.
+
+    Returns `dataset` with only those entries that are present in the given
+    file.
     """
 
     with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'r') as f:
@@ -392,10 +395,10 @@ def load_subset(filename, dataset):
 
 
 def write_perplexities(dataset):
-    """Write perplexities to file.
+    """Write perplexities of entries in `dataset` to file.
 
-    `dataset` must be a list of dictionaries, each having the keys 'tweet_id'
-    and 'perplexity'.
+    `dataset` must be a list of entries represented by dictionaries, each
+    dictionary having the keys 'tweet_id' and 'perplexity'.
     """
 
     with open(
@@ -409,11 +412,13 @@ def write_perplexities(dataset):
 
 
 def load_perplexities(dataset):
-    """Load perplexity values for tweets in `dataset`.
+    """Load perplexity values of entries in `dataset` from file.
 
-    `dataset` must be a list of dictionaries, each having the key 'tweet_id'.
-    The key 'perplexity' is added to each of these dictionaries, with the
-    corresponding perplexity value, and the entire list is returned.
+    `dataset` must be a list of entries represented by dictionaries, each
+    dictionary having the key 'tweet_id'.
+
+    Returns `dataset` with the key 'perplexity' added to each entry, containing
+    the perplexity value.
     """
 
     with open(
