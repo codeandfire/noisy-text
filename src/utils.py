@@ -1,5 +1,6 @@
 """Utility functions."""
 
+import bisect
 import csv
 import os
 import re
@@ -372,24 +373,16 @@ def load_subset(filename, dataset):
     with open(os.path.join(settings.CHALLENGE_ROOT, filename), 'r') as f:
         tweet_ids = [line.strip() for line in f.readlines()]
 
-    # sorting to search for the tweet IDs more efficiently;
-    # rather than something like
-    # subset = [
-    #   d for d in base_dataset if d['tweet_id'] in tweet_ids
-    # ]
-    # which can be very slow.
+    # using binary search; ordinary search may be slow.
+    # sorting prior to using binary search.
     tweet_ids.sort()
-    dataset.sort(key=lambda d: d['tweet_id'])
 
-    c = 0
     subset = []
+
     for d in dataset:
-        try:
-            if d['tweet_id'] == tweet_ids[c]:
-                subset.append(d)
-                c = c + 1
-        except IndexError:  # c is out of bounds
-            break
+        pos = bisect.bisect_left(tweet_ids, d['tweet_id'])
+        if tweet_ids[pos] == d['tweet_id']:   # found
+            subset.append(d)
 
     return subset
 
@@ -433,7 +426,7 @@ def load_perplexities(dataset):
         )
         perps = list(reader)
 
-    # again, sorting to search efficiently.
+    # sorting to search efficiently.
     perps.sort(key=lambda p: p['tweet_id'])
     dataset.sort(key=lambda d: d['tweet_id'])
 
