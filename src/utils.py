@@ -58,7 +58,7 @@ def load_eng_tweets_dataset(split='train'):
     # (the newline='' argument is required by csv.DictReader)
 
     with open(
-        os.path.join(settings.EN_TWEETS_ROOT, filename),
+        os.path.join(settings.ENG_TWEETS_ROOT, filename),
         'r',
         encoding='utf-8',
         newline=''
@@ -116,7 +116,7 @@ def load_hin_eng_tweets_dataset(split='train', lang_labels=False):
     # characters.
 
     with open(
-        os.path.join(settings.HI_EN_TWEETS_ROOT, filename),
+        os.path.join(settings.HIN_ENG_TWEETS_ROOT, filename),
         'r',
         encoding='utf-8'
     ) as dataset_file:
@@ -166,7 +166,7 @@ def load_hin_eng_tweets_dataset(split='train', lang_labels=False):
 
         # load the sentiment labels of the test split
         with open(
-            os.path.join(settings.HI_EN_TWEETS_ROOT, 'test-labels.txt'), 'r'
+            os.path.join(settings.HIN_ENG_TWEETS_ROOT, 'test-labels.txt'), 'r'
         ) as f:
 
             # the first line is a header, ignore it
