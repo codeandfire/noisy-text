@@ -308,13 +308,19 @@ if __name__ == '__main__':
         split='test', lang_labels=True
     ))
 
-    dataset.extend(utils.load_subset(settings.CODEMIX_ALL_ENG_FILE, codemix))
+    dataset.extend(
+        utils.load_subset(settings.TESTSET_FILENAMES['codemix-eng'], codemix)
+    )
 
     markers['translit-all'] = len(dataset)
-    dataset.extend(utils.load_subset(settings.CODEMIX_ALL_HIN_FILE, codemix))
+    dataset.extend(
+        utils.load_subset(settings.TESTSET_FILENAMES['codemix-hin'], codemix)
+    )
 
     markers['translit-only-hin'] = len(dataset)
-    dataset.extend(utils.load_subset(settings.CODEMIX_MIXED_FILE, codemix))
+    dataset.extend(
+        utils.load_subset(settings.TESTSET_FILENAMES['codemix-mixed'], codemix)
+    )
 
 
     # separately extract the text of the tweets for preprocessing.
