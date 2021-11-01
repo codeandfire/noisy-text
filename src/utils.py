@@ -390,9 +390,14 @@ def load_subset(testset_name, dataset):
     subset = []
 
     for d in dataset:
+
         pos = bisect.bisect_left(tweet_ids, d['tweet_id'])
-        if tweet_ids[pos] == d['tweet_id']:   # found
-            subset.append(d)
+
+        try:
+            if tweet_ids[pos] == d['tweet_id']:   # found
+                subset.append(d)
+        except IndexError:   # pos points to the end of the list
+            continue
 
     return subset
 
@@ -444,8 +449,12 @@ def load_perplexities(dataset):
     for p in perps:
         try:
             if p['tweet_id'] == dataset[c]['tweet_id']:
-                dataset[c]['perplexity'] = p['perplexity']
+
+                # convert the string perplexity value to a float
+                dataset[c]['perplexity'] = float(p['perplexity'])
+
                 c = c + 1
+
         except IndexError:   # c is out of bounds
             break
 
