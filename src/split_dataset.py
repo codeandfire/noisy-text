@@ -2,10 +2,11 @@
 
 import random
 
+import settings
 import utils
 
 
-class SplitDatasetLang:
+class SplitLang:
     """Helper class to split the code-mixed Hindi-English dataset on basis of
     fraction of words labelled as English/Hindi."""
 
@@ -76,7 +77,8 @@ class SplitDatasetLang:
         hin_lower=None,
         hin_upper=None,
         preview=True,
-        save_filename=None
+        return_total=False,
+        testset_name=None
     ):
         """Filter the code-mixed dataset.
 
@@ -102,8 +104,14 @@ class SplitDatasetLang:
                 preview the filtered subset.
                 returns a random sample of 20 tweets from the filtered subset.
 
-            save_filename : str
-                name of file to which the filtered subset is written.
+            return_total : bool
+                return the total number of samples in this filtered subset.
+                not applicable if preview=True.
+
+            testset_name : str
+                name of test set which this filtered subset will be written as.
+                this value must be a key in the dictionary
+                `settings.TESTSET_FILENAMES`.
                 if None, the filtered subset is not saved.
         """
 
@@ -126,9 +134,82 @@ class SplitDatasetLang:
                 subset.append(d)
                 idxs.append(i)
 
-        if save_filename is not None:
-            utils.write_subset(subset, save_filename)
+        if testset_name is not None:
+            utils.write_subset(subset, testset_name)
         
         if preview:
             sample = [self._orig_tweets[random.choice(idxs)] for _ in range(20)]
             return sample
+        elif return_total:
+            return len(subset)
+
+
+class SplitPerplexity:
+    """Helper class to split datasets into challenge/easy test sets on basis of
+    perplexity values."""
+
+    def __init__(self, name, parent_split='test'):
+        """Initializes the class.
+
+        Provide the name of the dataset to be split.
+        By default, only the samples from the 'test' split of the parent dataset
+        are considered while splitting into challenge/easy test sets.
+        You can also pass parent_split='dev' or parent_split='train' but
+        ideally this should only be done for analysis purposes, and not while
+        creating the actual challenge/easy test sets.
+        """
+
+        if name == 'mono-eng':
+            self._dataset = utils.load_eng_tweets_dataset(split=parent_split)
+
+        elif name.startswith('codemix'):
+            self._dataset = utils.load_hin_eng_tweets_dataset(split=parent_split)
+            self._dataset = utils.load_subset(name, self._dataset)
+
+        self._dataset = utils.load_perplexities(self._dataset)
+
+    def filter(
+        self,
+        lower,
+        upper,
+        preview=True,
+        return_total=False,
+        testset_name=None
+    ):
+        """Filter the dataset by applying thresholds on perplexity values.
+
+        Arguments
+        ---------
+            lower : float
+                lower bound on perplexity value.
+
+            upper : float
+                upper bound on perplexity value.
+
+            preview : bool
+                preview the filtered subset.
+                returns a random sample of 20 tweets from the filtered subset.
+
+            return_total : bool
+                return the total number of samples in this filtered subset.
+                not applicable if preview=True.
+
+            testset_name : str
+                name of test set which this filtered subset will be written as.
+                this value must be a key in the dictionary
+                `settings.TESTSET_FILENAMES`.
+                if None, the filtered subset is not saved.
+        """
+
+        subset = [
+            d for d in self._dataset if lower <= d['perplexity'] <= upper
+        ]
+
+        if testset_name is not None:
+            utils.write_subset(subset, testset_name)
+
+        if preview:
+            sample = [random.choice(subset)['text'] for _ in range(20)]
+            return sample
+        elif return_total:
+            return len(subset)
