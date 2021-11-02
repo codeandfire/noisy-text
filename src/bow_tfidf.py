@@ -21,6 +21,7 @@ def _analyzer(s):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
+        description=__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
