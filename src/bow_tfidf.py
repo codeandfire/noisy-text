@@ -25,7 +25,7 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--dataset', type=str, choices=['mono-eng', 'codemix'], required=True,
+        'dataset', type=str, choices=['mono-eng', 'codemix'],
         help='dataset to run model on'
     )
     parser.add_argument(
