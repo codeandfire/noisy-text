@@ -20,22 +20,28 @@ def _analyzer(s):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
-        '--dataset',
-        type=str,
-        choices=['mono-eng', 'codemix'],
-        default='mono-eng',
+        '--dataset', type=str, choices=['mono-eng', 'codemix'], required=True,
         help='dataset to run model on'
     )
     parser.add_argument(
         '--final-run', action='store_true', default=False,
         help='do not train the model, run the trained model on test sets'
     )
+    parser.add_argument(
+        '--bow-cutoff', type=int, default=1, help='count cutoff for bag-of-words'
+    )
+    parser.add_argument(
+        '--l1-penalty', type=float, default=1.0, help='l1 regularization penalty'
+    )
     args = parser.parse_args()
 
     if not args.final_run:
         
+        # load train and dev datasets
         if args.dataset == 'mono-eng':
             train = utils.load_eng_tweets_dataset(split='train')
             dev = utils.load_eng_tweets_dataset(split='dev')
@@ -48,6 +54,7 @@ if __name__ == '__main__':
 
     else:
 
+        # load test sets
         if args.dataset == 'mono-eng':
             overall = utils.load_eng_tweets_dataset(split='test')
             test_set_names = ['mono-eng-easy', 'mono-eng-challenge']
@@ -70,6 +77,8 @@ if __name__ == '__main__':
 
         preprocess_datasets = test_sets
 
+
+    # markers to denote where each dataset starts and ends.
     markers = []
     for dataset in preprocess_datasets:
         try:
@@ -77,6 +86,7 @@ if __name__ == '__main__':
         except IndexError:
             markers.append(len(dataset))
 
+    # preprocess all tweets in all datasets.
     tweets = utils.preprocess_tweets(
         [t['text'] for dataset in preprocess_datasets for t in dataset],
         tokenize=True,
@@ -87,6 +97,8 @@ if __name__ == '__main__':
         emoji_to_text=False
     )
 
+    # assign the preprocessed tweets to their corresponding entries in the
+    # datasets.
     for m in range(len(markers)):
         if m == 0:
             start, end = 0, markers[m]
@@ -94,38 +106,50 @@ if __name__ == '__main__':
             start, end = markers[m-1], markers[m]
 
         for i in range(start, end):
+
+            # join the tokenized tweets by whitespace, for the sake of sklearn's
+            # CountVectorizer which expects a list of strings.
+            # _analyzer splits on this whitespace, so we get the original tokens
+            # back.
             preprocess_datasets[m][i-start]['text'] = ' '.join(tweets[i])
+
 
     if not args.final_run:
 
+        # model definition
         model = Pipeline([
-            ('bow', CountVectorizer(min_df=2, analyzer=_analyzer)),
+            ('bow', CountVectorizer(min_df=args.bow_cutoff, analyzer=_analyzer)),
             ('tfidf', TfidfTransformer()),
             (
                 'classifier',
                 LogisticRegression(
                     fit_intercept=True,
                     penalty='l1',
-                    C=1.0,
+                    C=args.l1_penalty,
                     solver='liblinear'
                 )
             )
         ])
 
+        # train the model
         X_train, y_train = [t['text'] for t in train], [t['label'] for t in train]
         model.fit(X_train, y_train)
 
+        # save the model
         filename = 'bow-tfidf-' + args.dataset + '.pkl'
         joblib.dump(model, filename)
 
         test_sets = {'dev': dev}
 
     else:
+
+        # load the saved model
         filename = 'bow-tfidf-' + args.dataset + '.pkl'
         model = joblib.load(filename)
 
         test_sets = {name: test for name, test in zip(test_set_names, test_sets)}
 
+    # test the model
     for name, test in test_sets.items():
 
         X_test, y_test = [t['text'] for t in test], [t['label'] for t in test]
