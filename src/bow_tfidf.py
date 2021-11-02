@@ -73,46 +73,32 @@ if __name__ == '__main__':
         for name in test_set_names:
             test_sets.append(utils.load_subset(name, overall[:]))
 
+        # 'overall' is also a test set!
         test_sets.insert(0, overall[:])
         test_set_names.insert(0, 'overall')
 
         preprocess_datasets = test_sets
 
 
-    # markers to denote where each dataset starts and ends.
-    markers = []
     for dataset in preprocess_datasets:
-        try:
-            markers.append(markers[-1] + len(dataset))
-        except IndexError:
-            markers.append(len(dataset))
 
-    # preprocess all tweets in all datasets.
-    tweets = utils.preprocess_tweets(
-        [t['text'] for dataset in preprocess_datasets for t in dataset],
-        tokenize=True,
-        mask_user=True,
-        mask_httpurl=True,
-        mask_hashtag=False,
-        mask_emoji=False,
-        emoji_to_text=False
-    )
+        tweets = utils.preprocess_tweets(
+            [d['text'] for d in dataset],
+            tokenize=True,
+            mask_user=True,
+            mask_httpurl=True,
+            mask_hashtag=False,
+            mask_emoji=False,
+            emoji_to_text=False
+        )
 
-    # assign the preprocessed tweets to their corresponding entries in the
-    # datasets.
-    for m in range(len(markers)):
-        if m == 0:
-            start, end = 0, markers[m]
-        else:
-            start, end = markers[m-1], markers[m]
-
-        for i in range(start, end):
+        for d in range(len(dataset)):
 
             # join the tokenized tweets by whitespace, for the sake of sklearn's
             # CountVectorizer which expects a list of strings.
             # _analyzer splits on this whitespace, so we get the original tokens
             # back.
-            preprocess_datasets[m][i-start]['text'] = ' '.join(tweets[i])
+            dataset[d]['text'] = ' '.join(tweets[d])
 
 
     if not args.final_run:
