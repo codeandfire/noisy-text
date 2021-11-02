@@ -332,12 +332,16 @@ def back_transliterate(text, lang_labels=None):
     """Back-transliterate from Roman script to Devanagari.
 
     Optionally accepts a list of language labels, in which case it back-
-    transliterates only those tokens marked as LANG_HIN. In this case, `text'
-    must be a list of strings (tokens) rather than a single string.
+    transliterates only those tokens marked as LANG_HIN.
     """
 
     if lang_labels is None:
-        return _trn.transform(text)
+        if isinstance(text, str):
+            return _trn.transform(text)
+        elif isinstance(text, list):
+            return [_trn.transform(t) for t in text]
+        else:
+            raise ValueError('text is neither a string nor a list of strings')
 
     translit_text = []
     for i, t in enumerate(text):
