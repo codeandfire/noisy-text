@@ -19,14 +19,31 @@ import utils
 
 
 class BERTDataset(Dataset):
+    """Dataset definition required by PyTorch."""
 
     def __init__(self, dict_dataset, bert_tokenizer):
+        """Initialize the dataset.
+
+        Pass a dataset in the form of a list of dictionaries, each dictionary
+        having keys 'text' and 'label' giving the tokenized text of the tweet
+        and the sentiment label as an integer index respectively.
+        Also pass the BERT tokenizer that needs to be applied on the tweets.
+        """
+
         super().__init__()
+
         self.encoding = bert_tokenizer(
             [d['text'] for d in dict_dataset],
+
+            # start- and end-of-sentence tokens
             add_special_tokens=True,
+
+            # pad upto the longest sequence in the dataset
             padding='longest',
+
+            # text is already tokenized
             is_split_into_words=True,
+
             return_attention_mask=True,
             return_tensors='pt'
         )
@@ -48,6 +65,7 @@ class BERTDataset(Dataset):
 
 
 class BERTClassifier(nn.Module):
+    """Model definition."""
 
     NUM_CLASSES = 3
 
@@ -72,7 +90,15 @@ class BERTClassifier(nn.Module):
         )
 
         if self.finetune:
-            return self.classifier(bert_reps.pooler_output)
+
+            # use the [CLS] token representation
+            try:
+                return self.classifier(bert_reps.pooler_output)
+
+            except AttributeError:   # happens in the case of ELECTRA models
+                return self.classifier(bert_reps.last_hidden_state[:, 0, :])
+
+        # mean pool over hidden states
         return self.classifier(
             torch.mean(bert_reps.last_hidden_state, dim=1)
         )
@@ -166,6 +192,8 @@ if __name__ == '__main__':
             )
 
         if args.debug:
+
+            # use only the first 50 samples!
             train, dev = train[:50], dev[:50]
 
         preprocess_datasets = [train, dev]
