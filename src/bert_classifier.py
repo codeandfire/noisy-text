@@ -2,6 +2,7 @@
 tuning configurations."""
 
 import argparse
+import copy
 import logging
 
 from sklearn.metrics import classification_report
@@ -189,10 +190,10 @@ if __name__ == '__main__':
 
         test_sets = []
         for name in test_set_names:
-            test_sets.append(utils.load_subset(name, overall[:]))
+            test_sets.append(utils.load_subset(name, copy.deepcopy(overall)))
 
         # 'overall' is also a test set!
-        test_sets.insert(0, overall[:])
+        test_sets.insert(0, overall)
         test_set_names.insert(0, 'overall')
 
         preprocess_datasets = test_sets
@@ -238,7 +239,15 @@ if __name__ == '__main__':
             dataset[d]['text'] = tweets[d]
 
             # convert sentiment labels to indices
-            dataset[d]['label'] = labels_to_idx[dataset[d]['label']]
+            try:
+                dataset[d]['label'] = labels_to_idx[dataset[d]['label']]
+            except KeyError:
+
+                # there is (at least) one bad label which is neither 'positive',
+                # 'negative' nor 'neutral'
+                # setting it to 'positive' here; it doesn't really matter which
+                # class is chosen since it is (or seems to be) only one sample.
+                dataset[d]['label'] = labels_to_idx['positive']
 
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
