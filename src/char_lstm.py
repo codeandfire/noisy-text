@@ -241,9 +241,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--batch-size', type=int, default=256, help='batch size'
     )
-    parser.add_argument(
-        '--epochs', type=int, default=1, help='training epochs'
-    )
+    parser.add_argument('--epochs', type=int, default=1, help='training epochs')
     parser.add_argument(
         '--record-loss', type=int, default=5,
         help='record training loss after every given number of batches'
@@ -498,10 +496,9 @@ if __name__ == '__main__':
 
     with torch.no_grad():
 
-        for batch_idx, batch in tqdm(
-            enumerate(dataloader),
+        for batch in tqdm(
+            dataloader,
             desc='perplexity values',
-            total=len(dataloader),
             unit='batch'
         ):
 
