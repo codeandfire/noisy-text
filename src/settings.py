@@ -1,6 +1,7 @@
 """Global settings for the project.
 
-Entries that have value 'None' are automatically filled in by setup.sh.
+The ROOTs with value None are automatically set to the appropriate paths by
+setup.sh.
 """
 
 # BERT and co.
