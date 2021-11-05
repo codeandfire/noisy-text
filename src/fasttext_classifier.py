@@ -3,6 +3,7 @@ inputs to LSTM at each timestep.
 """
 
 import argparse
+import copy
 import logging
 import random
 import os
