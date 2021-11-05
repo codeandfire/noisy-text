@@ -9,6 +9,7 @@ import random
 import os
 
 import fasttext
+from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
