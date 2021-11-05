@@ -4,6 +4,7 @@ Baseline system.
 """
 
 import argparse
+import copy
 
 import joblib
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -71,7 +72,7 @@ if __name__ == '__main__':
 
         test_sets = []
         for name in test_set_names:
-            test_sets.append(utils.load_subset(name, overall[:]))
+            test_sets.append(utils.load_subset(name, copy.deepcopy(overall)))
 
         # 'overall' is also a test set!
         test_sets.insert(0, overall[:])
