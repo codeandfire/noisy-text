@@ -114,32 +114,10 @@ AutoModel.from_pretrained('$indicbert_weights_name', cache_dir='$models_root/$in
 }
 
 
-function glove_download () {
-	cat <<EOF
-----------------------------------------------------------
-STEP 3 : Downloading pretrained GloVe vectors (glove.840B)
-----------------------------------------------------------
-EOF
-	glove_dirname='glove'
-
-	# skip if already downloaded
-	if [ -f "$models_root/$glove_dirname/glove.840B.300d.txt" ]; then
-		return
-	fi
-
-	mkdir "$models_root/$glove_dirname/"
-	wget 'https://nlp.stanford.edu/data/glove.840B.300d.zip'
-	unzip 'glove.840B.300d.zip'
-	mv 'glove.840B.300d.txt' "$models_root/$glove_dirname/"
-	rm 'glove.840B.300d.zip'
-	modify_setting 'GLOVE_ROOT' "'$PWD/$models_root/$glove_dirname/'"
-}
-
-
 function fasttext_download () {
 	cat <<EOF
 ------------------------------------------------------------------------
-STEP 4 : Downloading pretrained fastText vectors (crawl-300d-2M-subword)
+STEP 3 : Downloading pretrained fastText vectors (crawl-300d-2M-subword)
 ------------------------------------------------------------------------
 EOF
 	fasttext_dirname='fasttext'
@@ -161,7 +139,7 @@ EOF
 function indicft_download () {
 	cat <<EOF
 --------------------------------------------------------
-STEP 5 : Downloading pretrained IndicFT model (lang: hi)
+STEP 4 : Downloading pretrained IndicFT model (lang: hi)
 --------------------------------------------------------
 EOF
 	indicft_dirname='indicft'
@@ -181,7 +159,7 @@ EOF
 function semeval17_download () {
 	cat <<EOF
 ------------------------------------------------------------------------------
-STEP 6 : Downloading SemEval-2017 Task 4 Subtask A dataset
+STEP 5 : Downloading SemEval-2017 Task 4 Subtask A dataset
 
 NOTE : For the training data, this step only downloads the IDs and annotations
 of the tweets. For downloading the actual text of the tweets, SemEval provides
@@ -224,7 +202,7 @@ EOF
 function semeval20_download () {
 	cat <<EOF
 ---------------------------------------------------------------------------
-STEP 7 : Downloading SemEval-2020 Task 9 Dataset
+STEP 6 : Downloading SemEval-2020 Task 9 Dataset
 NOTE : This dataset contains the text of all tweets so no separate scraping
 step is involved.
 ---------------------------------------------------------------------------
@@ -258,7 +236,7 @@ EOF
 function statmt_download () {
 	cat <<EOF
 -------------------------------------------------------
-STEP 8 : Downloading statmt.org's 1 Billion Word Corpus
+STEP 7 : Downloading statmt.org's 1 Billion Word Corpus
 -------------------------------------------------------
 EOF
 
@@ -292,7 +270,7 @@ EOF
 function indiccorp_hi_download () {
 	cat <<EOF
 ----------------------------------------------------------------
-STEP 9 : Downloading IndicNLPSuite's Hindi Corpus (IndicCorp hi)
+STEP 8 : Downloading IndicNLPSuite's Hindi Corpus (IndicCorp hi)
 ----------------------------------------------------------------
 EOF
 
@@ -319,14 +297,10 @@ EOF
 	modify_setting 'HI_CORPUS_ROOT' "'$PWD/$data_root/$indiccorp_hi_dirname/'"
 }
 
-function tools_download () {
+function translit_download () {
 	cat <<EOF
 ---------------------------------------------------------------------
-STEP 10 : Downloading external tools
-
-* BERTweet's tweet normalization module
-* Bhat et. al. (2014)'s transliteration tool
-
+STEP 9 : Downloading Bhat et. al. (2014)'s transliteration tool
 Note that some Python packages will be installed.
 ---------------------------------------------------------------------
 EOF
@@ -353,7 +327,7 @@ EOF
 function scrape_tweets () {
 	cat <<EOF
 -----------------------------------------------------------------------------
-STEP 11 : Scraping tweets of SemEval-2017 Task 4 Subtask A
+STEP 10 : Scraping tweets of SemEval-2017 Task 4 Subtask A
 
 For this step, please make sure that you have a Twitter account, a Twitter
 Developer Account and a registered app on the Twitter Developer Platform.
@@ -499,12 +473,11 @@ modify_setting 'CHALLENGE_ROOT' "'$PWD/$challenge_root/'"
 
 pip_install
 bert_download
-glove_download
 fasttext_download
 indicft_download
 semeval17_download
 semeval20_download
 statmt_download
 indiccorp_hi_download
-tools_download
+translit_download
 scrape_tweets
