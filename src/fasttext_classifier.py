@@ -28,7 +28,11 @@ class FasttextDataset(Dataset):
 
         texts = [d['text'] for d in dict_dataset]
         self.subword_ids = [
-            [torch.tensor(fasttext_model.get_subwords(w)[1]) for w in t]
+            [
+                torch.tensor(
+                    fasttext_model.get_subwords(w)[1], dtype=torch.int64
+                ) for w in t
+            ]
             for t in texts
         ]
         self.labels = torch.tensor([d['label'] for d in dict_dataset])
@@ -121,7 +125,7 @@ if __name__ == '__main__':
     )
     parser.add_argument('--epochs', type=int, default=1, help='training epochs')
     parser.add_argument(
-        '--record-loss', type=int, default=10000,
+        '--record-loss', type=int, default=100,
         help='record training loss after every given number of updates'
     )
     parser.add_argument(
