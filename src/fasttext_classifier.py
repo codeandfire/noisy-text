@@ -83,7 +83,10 @@ class FasttextClassifierLSTM(nn.Module):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         'dataset', type=str, choices=['mono-eng', 'codemix'],
         help='dataset to run model on'
