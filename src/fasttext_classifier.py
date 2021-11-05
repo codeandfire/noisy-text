@@ -5,16 +5,16 @@ inputs to LSTM at each timestep.
 import argparse
 import copy
 import logging
-import random
 import os
 
 import fasttext
+import numpy as np
 from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 import settings
@@ -23,75 +23,37 @@ import utils
 
 class FasttextDataset(Dataset):
 
-    def __init__(self, dict_dataset, fasttext_model):
+    def __init__(self, texts, labels, fasttext_model):
         super().__init__()
 
-        texts = [d['text'] for d in dict_dataset]
-        self.subword_ids = [
-            [
-                torch.tensor(
-                    fasttext_model.get_subwords(w)[1], dtype=torch.int64
-                ) for w in t
-            ]
+        self.vecavgs = [
+            np.mean([
+                fasttext_model.get_word_vector(w) for w in t
+            ], axis=0)
             for t in texts
         ]
-        self.labels = torch.tensor([d['label'] for d in dict_dataset])
+        self.labels = labels
 
     def __len__(self):
         return len(self.labels)
 
     def  __getitem__(self, idx):
-        return self.subword_ids[idx], self.labels[idx].unsqueeze(0)
+        return self.vecavgs[idx], self.labels[idx]
 
 
-class FasttextClassifierVecAvg(nn.Module):
-
-    NUM_CLASSES = 3
-
-    def __init__(self, fasttext_model):
-        super().__init__()
-
-        embedding = torch.from_numpy(fasttext_model.get_input_matrix())
-        self.embedding = nn.Embedding.from_pretrained(embedding, freeze=True)
-        self.classifier = nn.Linear(
-            in_features=self.embedding.embedding_dim,
-            out_features=self.NUM_CLASSES
-        )
-
-    def forward(self, subword_ids):
-        seq = torch.stack(
-            [torch.mean(self.embedding(ids), dim=0) for ids in subword_ids],
-            dim=0
-        )
-        return self.classifier(torch.mean(seq, dim=0).unsqueeze(0))
-
-
-class FasttextClassifierLSTM(nn.Module):
+class LinearClassifier(nn.Module):
 
     NUM_CLASSES = 3
 
-    def __init__(self, fasttext_model, hidden_size=100):
+    def __init__(self, input_size=300):
         super().__init__()
 
-        embedding = torch.from_numpy(fasttext_model.get_input_matrix())
-        self.embedding = nn.Embedding.from_pretrained(embedding, freeze=False)
-        self.lstm = nn.LSTM(
-            input_size=self.embedding.embedding_dim,
-            hidden_size=hidden_size,
-            num_layers=1,
-            batch_first=True
-        )
         self.classifier = nn.Linear(
-            in_features=hidden_size, out_features=self.NUM_CLASSES
+            in_features=input_size, out_features=self.NUM_CLASSES
         )
 
-    def forward(self, subword_ids):
-        seq = torch.stack(
-            [torch.mean(self.embedding(ids), dim=0) for ids in subword_ids],
-            dim=0
-        )
-        seq, _ = self.lstm(seq.unsqueeze(0))
-        return self.classifier(seq[:, -1, :])
+    def forward(self, vecavgs):
+        return self.classifier(vecavgs)
 
 
 if __name__ == '__main__':
@@ -113,12 +75,7 @@ if __name__ == '__main__':
         help='choice of fasttext model'
     )
     parser.add_argument(
-        '--no-finetune', action='store_true', default=False,
-        help='do not finetune the BERT model'
-    )
-    parser.add_argument(
-        '--hidden-size', type=int, default=100,
-        help='hidden dimensionality of LSTM (not applicable if --no-finetune)'
+        '--batch-size', type=int, default=256, help='batch size'
     )
     parser.add_argument(
         '--learning-rate', type=float, default=1e-5, help='learning rate'
@@ -234,18 +191,10 @@ if __name__ == '__main__':
 
     # filename which the model will be (i) saved to, if training or (ii) loaded
     # from, if final run.
-    filename = '{}-{}-'.format(args.model, args.dataset)
-    filename += 'no-finetune' if args.no_finetune else 'finetune'
-    filename += '.pt'
+    filename = '{}-{}.pt'.format(args.model, args.dataset)
 
 
-    if args.no_finetune:
-        model = FasttextClassifierVecAvg(fasttext_model)
-    else:
-        model = FasttextClassifierLSTM(
-            fasttext_model, hidden_size=args.hidden_size
-        )
-
+    model = LinearClassifier()
 
     if args.final_run:
 
@@ -258,7 +207,17 @@ if __name__ == '__main__':
 
         # train the model.
         # prepare the train set.
-        train = FasttextDataset(train, fasttext_model)
+        train = FasttextDataset(
+            [t['text'] for t in train],
+            [t['label'] for t in train],
+            fasttext_model
+        )
+        dataloader = DataLoader(
+            train,
+            shuffle=True,
+            pin_memory=True,
+            batch_size=args.batch_size
+        )
 
         model.to(device)
 
@@ -278,32 +237,29 @@ if __name__ == '__main__':
                 print('Epoch {}'.format(epoch_idx+1))
             running_loss = 0.0
 
-            # shuffle the dataset, or rather the indices of the samples
-            sample_idxs = list(range(len(train)))
-            random.shuffle(sample_idxs)
+            for batch_idx, batch in tqdm(
+                enumerate(dataloader),
+                desc='training',
+                total=len(dataloader),
+                unit='batch'
+            ):
 
-            for i in tqdm(sample_idxs, desc='training', unit='sample'):
-
-                subword_ids, label = train[i]
-
-                subword_ids = [
-                    ids.to(device, non_blocking=True) for ids in subword_ids
-                ]
-                label = label.to(device, non_blocking=True)
+                batch = [b.to(device, non_blocking=True) for b in batch]
+                vecavgs, labels = batch
 
                 optimizer.zero_grad()
 
-                scores = model(subword_ids)
+                scores = model(vecavgs)
 
-                loss = loss_fn(scores, label)
+                loss = loss_fn(scores, labels)
                 loss.backward()
                 optimizer.step()
 
                 running_loss += loss.item()
 
-                if i % args.record_loss == args.record_loss-1:
+                if batch_idx % args.record_loss == args.record_loss-1:
                     logging.info(
-                        f'epoch {epoch_idx+1} update {i+1}: loss = {running_loss:.6f}'
+                        f'epoch {epoch_idx+1} batch {batch_ids+1}: loss = {running_loss:.6f}'
                     )
                     running_loss = 0.0
 
@@ -321,28 +277,32 @@ if __name__ == '__main__':
     # test the model
     for name, test in test_sets.items():
 
-        test = FasttextDataset(test, fasttext_model)
+        test = FasttextDataset(
+            [t['text'] for t in test],
+            [t['label'] for t in test],
+            fasttext_model
+        )
+        dataloader = DataLoader(
+            test,
+            shuffle=False,
+            pin_memory=True,
+            batch_size=args.batch_size
+        )
+
         true, pred = [], []
 
         with torch.no_grad():
 
-            for i in tqdm(
-                range(len(test)),
-                desc='inference',
-                total=len(test),
-                unit='sample'
+            for batch in tqdm(
+                dataloader, desc='inference', unit='batch'
             ):
-                subword_ids, label = train[i]
+                batch = [b.to(device, non_blocking=True) for b in batch]
+                vecavgs, labels = batch
 
-                subword_ids = [
-                    ids.to(device, non_blocking=True) for ids in subword_ids
-                ]
-                label = label.to(device, non_blocking=True)
+                scores = model(vecavgs)
 
-                scores = model(subword_ids)
-
-                pred.append(torch.argmax(scores, dim=1)[0].item())
-                true.append(label[0].item())
+                pred.extend(torch.argmax(scores, dim=1).tolist())
+                true.extend(labels.tolist())
 
         # sentiment labels are indexes as converted by labels_to_idx
         # convert them back to labels to see them in the report
