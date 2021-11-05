@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 import settings
 import utils
@@ -27,7 +28,7 @@ class FasttextDataset(Dataset):
         texts = [d['text'] for d in dict_dataset]
         self.subword_ids = [
             [torch.tensor(fasttext_model.get_subwords(w)[1]) for w in t]
-            for t in self.texts
+            for t in texts
         ]
         self.labels = torch.tensor([d['label'] for d in dict_dataset])
 
@@ -53,7 +54,9 @@ class FasttextClassifierVecAvg(nn.Module):
         )
 
     def forward(self, subword_ids):
-        seq = [torch.mean(self.embedding(ids)) for ids in subword_ids]
+        seq = torch.tensor(
+            [torch.mean(self.embedding(ids)) for ids in subword_ids]
+        )
         return self.classifier(torch.mean(seq).unsqueeze(0))
 
 
@@ -270,7 +273,7 @@ if __name__ == '__main__':
             sample_idxs = list(range(len(train)))
             random.shuffle(sample_idxs)
 
-            for i in sample_idxs:
+            for i in tqdm(sample_idxs, desc='training', unit='sample'):
 
                 subword_ids, label = train[i]
 
@@ -314,7 +317,12 @@ if __name__ == '__main__':
 
         with torch.no_grad():
 
-            for i in range(len(test)):
+            for i in tqdm(
+                range(len(test)),
+                desc='inference',
+                total=len(test),
+                unit='sample'
+            ):
                 subword_ids, label = train[i]
 
                 subword_ids = [
