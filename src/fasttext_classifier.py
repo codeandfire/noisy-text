@@ -56,7 +56,7 @@ class FasttextClassifierVecAvg(nn.Module):
 
     def forward(self, subword_ids):
         seq = torch.tensor(
-            [torch.mean(self.embedding(ids)) for ids in subword_ids]
+            [torch.mean(self.embedding(ids), dim=0) for ids in subword_ids]
         ).to(self.device)
         return self.classifier(torch.mean(seq).unsqueeze(0))
 
@@ -82,7 +82,7 @@ class FasttextClassifierLSTM(nn.Module):
         self.device = device
 
     def forward(self, subword_ids):
-        seq = [torch.mean(self.embedding(ids)) for ids in subword_ids]
+        seq = [torch.mean(self.embedding(ids), dim=0) for ids in subword_ids]
         seq, _ = self.lstm(torch.tensor(seq).to(self.device).unsqueeze(0))
         return self.classifier(seq[:, -1, :])
 
