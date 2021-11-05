@@ -235,10 +235,10 @@ if __name__ == '__main__':
 
 
     if args.no_finetune:
-        model = FasttextClassifierVecAvg(fasttext_model, device)
+        model = FasttextClassifierVecAvg(fasttext_model)
     else:
         model = FasttextClassifierLSTM(
-            fasttext_model, device, hidden_size=args.hidden_size
+            fasttext_model, hidden_size=args.hidden_size
         )
 
 
