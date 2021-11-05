@@ -152,6 +152,8 @@ $ python3 bert_classifier.py 'codemix' --model 'indicbert' --no-finetune --final
 
 #### Word Embedding Models
 
+You can again use the `--debug` flag to check that everything is working.
+
 fastText without fine-tuning in the ME scenario:
 ```
 $ python3 fasttext_classifier.py 'mono-eng' --model 'fasttext' --learning-rate '0.05' --batch-size '256' --epochs '2'
