@@ -36,7 +36,7 @@ class FasttextDataset(Dataset):
         return len(self.labels)
 
     def  __getitem__(self, idx):
-        return self.subword_ids[idx], self.labels[idx]
+        return self.subword_ids[idx], self.labels[idx].unsqueeze(0)
 
 
 class FasttextClassifierVecAvg(nn.Module):
