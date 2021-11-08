@@ -1,6 +1,4 @@
-"""Classifier using fastText embeddings as (a) vector-averaged inputs and (b)
-inputs to LSTM at each timestep.
-"""
+"""Classifier using fastText embeddings as vector-averaged inputs."""
 
 import argparse
 import copy
@@ -22,10 +20,12 @@ import utils
 
 
 class FasttextDataset(Dataset):
+    """Dataset definition."""
 
     def __init__(self, texts, labels, fasttext_model):
         super().__init__()
 
+        # taking the average of fasttext embeddings of each word
         self.vecavgs = [
             np.mean([
                 fasttext_model.get_word_vector(w) for w in t
@@ -42,6 +42,7 @@ class FasttextDataset(Dataset):
 
 
 class LinearClassifier(nn.Module):
+    """Model definition."""
 
     NUM_CLASSES = 3
 
